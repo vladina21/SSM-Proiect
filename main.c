@@ -1,5 +1,7 @@
 #include "Uart.h"
 #include "Gpio.h"
+#include "Pit.h"
+#include "Adc.h"
 #include "stdio.h"
 
 extern uint8_t state;
@@ -7,24 +9,24 @@ extern uint8_t incomingPy;
 
 int main()
 {
-	Serial_Init(14400);
-	Serial_println("Start Program");
-	Serial_println("------123123123----");
-	Serial_println("<<BBbbFF");
-	char charArray[10];
+	UART_Init(14400);
+	//OutputPIN_Init();
+	//RGBLed_Init();
+	//PIT_Init();
+	//ADC0_Init();
+	
+	//UART_println("test msbf");
 
-    // Convert uint8_t to char array
-    
 	for(;;)
   {
+		/*
 		if(incomingPy)
 		{
 			sprintf(charArray, "%hhu", incomingPy);
-			Serial_println("\nincoming: ");
-			Serial_println(charArray);
+			UART_println("\nincoming: ");
+			UART_println(charArray);
 			incomingPy = 0;
 		}
+		*/
 	}
-	
-	
 }

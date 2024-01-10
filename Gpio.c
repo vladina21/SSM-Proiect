@@ -1,23 +1,42 @@
 #include "Gpio.h"
-
-#define LED_PIN (12) // PORT A
-#define RED_LED_PIN (18) // PORT B
-#define GREEN_LED_PIN (19) // PORT B
-#define BLUE_LED_PIN (1) // PORT D
+#include "Pit.h"
 
 uint8_t state;
+uint8_t is_set_red;
+uint8_t is_set_yellow;
+uint8_t is_set_green;
 
 void OutputPIN_Init(void){
 	
-	SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK;
+	SIM->SCGC5 |= SIM_SCGC5_PORTB_MASK;
 	
-	PORTA->PCR[LED_PIN] &= ~PORT_PCR_MUX_MASK;
-	PORTA->PCR[LED_PIN] |= PORT_PCR_MUX(1);
+	// Initializare PTB1
+	PORTB->PCR[OUT_RED_PIN] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[OUT_RED_PIN] |= PORT_PCR_MUX(1);
 	
-	GPIOA->PDDR |= (1<<LED_PIN);
-	GPIOA->PCOR |= (1<<LED_PIN);
+	GPIOB->PDDR |= (1<<OUT_RED_PIN);
+	GPIOB->PCOR |= (1<<OUT_RED_PIN);
 	
-	state = 0;
+	// Initializare PTB2
+	PORTB->PCR[OUT_YELLOW_PIN] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[OUT_YELLOW_PIN] |= PORT_PCR_MUX(1);
+	
+	GPIOB->PDDR |= (1<<OUT_YELLOW_PIN);
+	GPIOB->PCOR |= (1<<OUT_YELLOW_PIN);
+	
+	// Initializare PTB3
+	PORTB->PCR[OUT_GREEN_PIN] &= ~PORT_PCR_MUX_MASK;
+	PORTB->PCR[OUT_GREEN_PIN] |= PORT_PCR_MUX(1);
+	
+	GPIOB->PDDR |= (1<<OUT_GREEN_PIN);
+	GPIOB->PCOR |= (1<<OUT_GREEN_PIN);
+	
+	// Activare PTB1 (led verde)
+	GPIOB->PTOR = (1 << OUT_GREEN_PIN);
+	
+	is_set_red = 0;
+	is_set_yellow = 0;
+	is_set_green = 1;
 }
 
 void PORTA_IRQHandler() {
@@ -44,7 +63,7 @@ void PORTA_IRQHandler() {
 		state = 0;
 	}
 	
-	PORTA_ISFR = (1<<LED_PIN);
+	PORTA_ISFR |= (1<<LED_PIN);	
 }
 void RGBLed_Init(void){
 	
@@ -86,4 +105,6 @@ void RGBLed_Init(void){
 	
 	// Stingerea LED-ului (punerea pe 0 logic)
 	GPIOD_PSOR |= (1<<BLUE_LED_PIN);
+	
+  state = 0;
 }

@@ -1,8 +1,8 @@
-#include "serial.h"
+#include "Uart.h"
 
 uint8_t incomingPy = 0;
 
-uint8_t Serial_read(void)
+uint8_t UART_read(void)
 {
 	//Punem in asteptare pana cand registrul de receptie nu este plin
 	while(!(UART0->S1 & UART0_S1_RDRF_MASK)){}
@@ -15,12 +15,7 @@ void reverseBitsCh(char* ch)
                 ((*ch & 0x10) >> 1) | ((*ch & 0x20) >> 3) | ((*ch & 0x40) >> 5) | ((*ch & 0x80) >> 7));
 }
 
-void flipBitsCh(char* ch)
-{
-	*ch = ~(*ch);
-}
-
-void Serial_printChar(char ch)
+void UART_printChar(char ch)
 {
 	//Verificam daca bitul MSBF este setat
   if (UART0->S2 & UART0_S2_MSBF_MASK) {
@@ -35,23 +30,18 @@ void Serial_printChar(char ch)
 
 void UART0_IRQHandler(void) {
 
-		char c = Serial_read();
-	  Serial_printChar(c);
+		char c = UART_read();
+	  UART_printChar(c);
 	
 		if (UART0->S2 & UART0_S2_MSBF_MASK)
 		{
-		  //reverseBitsCh(&c);
-		}
-		if (UART0->S2 & UART0_S2_RXINV_MASK)
-		{
-			//flipBitsCh(&c);
+		  reverseBitsCh(&c);
 		}
 		
-		//incomingPy = c - '0';
-		incomingPy = c;
+		incomingPy = c - '0';
 }
 
-void Serial_Init(uint32_t baud_rate)
+void UART_Init(uint32_t baud_rate)
 {
 	
 	//Setarea sursei de ceas pentru modulul UART
@@ -84,8 +74,7 @@ void Serial_Init(uint32_t baud_rate)
 	//   BDH  -   0   0   0    b13 b12 b11 b10 b09
 	//   BDL  -   b08 b07 b06  b05 b04 b03 b02 b01
 	
-	uint16_t sbr = (uint16_t)((DEFAULT_SYSTEM_CLOCK)/(baud_rate * (osr+13)));
-  //uint16_t sbr = 136;
+	uint16_t sbr = (uint16_t)((DEFAULT_SYSTEM_CLOCK)/(baud_rate * (osr+13))); // osr + 13 = 16
 	uint8_t temp = UART0->BDH & ~(UART0_BDH_SBR(0x1F));
 	UART0->BDH = temp | UART0_BDH_SBR(((sbr & 0x1F00)>> 8));
 	UART0->BDL = (uint8_t)(sbr & UART_BDL_SBR_MASK);
@@ -107,25 +96,20 @@ void Serial_Init(uint32_t baud_rate)
 	NVIC_EnableIRQ(UART0_IRQn);
 	
 	//Setare data frame - msb first
-	//UART0->S2 |= UART0_S2_MSBF_MASK;
-	//UART0->S2 |= UART0_S2_MSBF_MASK | UART0_S2_RXINV_MASK;
-
-	UART0->S2 |= UART0_S2_RXINV_MASK;
-	//Inversare rx
-	//UART0->S2 = 16;
+	UART0->S2 |= UART0_S2_MSBF_MASK;
 }
 
-void Serial_print(char* string)
+void UART_print(char* string)
 {
 	int i = 0;
 	while(string[i] != '\0'){
-		Serial_printChar(string[i]);
+		UART_printChar(string[i]);
 		i++;
 	}
 }
-void Serial_println(char* string)
+void UART_println(char* string)
 {
-	Serial_print(string);
-	Serial_printChar('\n');
-	Serial_printChar('\r');
+	UART_print(string);
+	UART_printChar('\n');
+	UART_printChar('\r');
 }
