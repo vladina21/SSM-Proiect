@@ -10,4 +10,5 @@
 
 void OutputPIN_Init(void);
 void RGBLed_Init(void);
+void RGBLed_Deinit(void);
 void PORTA_IRQHandler(void);

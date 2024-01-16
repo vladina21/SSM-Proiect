@@ -5,6 +5,7 @@ uint8_t state;
 uint8_t is_set_red;
 uint8_t is_set_yellow;
 uint8_t is_set_green;
+uint8_t reverse;
 
 void OutputPIN_Init(void){
 	
@@ -41,27 +42,52 @@ void OutputPIN_Init(void){
 
 void PORTA_IRQHandler() {
 	
-	
 	// Prin utilizarea variabilei state, putem realiza un FSM
 	// si sa configuram fiecare tranzitie in parte prin 
 	// stingerea ledului anterior si aprinderea ledului curent
+	
+	if(!reverse)
+	{
+	  if(state == 0) {
+		  GPIOB_PTOR |= (1<<RED_LED_PIN);
+		  GPIOD_PTOR |= (1<<BLUE_LED_PIN);
+		  state = 1;
+	  } else if (state == 1) {
+		  GPIOB_PTOR |= (1<<RED_LED_PIN);
+		  state = 2;
+	  } else if (state == 2) {
+		  GPIOB_PTOR |= (1<<RED_LED_PIN);
+		  GPIOB_PTOR |= (1<<GREEN_LED_PIN);
+		  state = 3;
+	  } else if (state == 3) {
+		  GPIOB_PTOR |= (1<<GREEN_LED_PIN);
+		  GPIOD_PTOR |= (1<<BLUE_LED_PIN);
+		  GPIOB_PTOR |= (1<<RED_LED_PIN);
+		  state = 0;
+	  }
+		
+		PORTA_ISFR |= (1<<LED_PIN);	
+		
+		return;
+  }
+	
 	if(state == 0) {
 		GPIOB_PTOR |= (1<<RED_LED_PIN);
-		GPIOD_PTOR |= (1<<BLUE_LED_PIN);
-		state = 1;
-	} else if (state == 1) {
-		GPIOB_PTOR |= (1<<RED_LED_PIN);
-		state = 2;
-	} else if (state == 2) {
-		GPIOB_PTOR |= (1<<RED_LED_PIN);
 		GPIOB_PTOR |= (1<<GREEN_LED_PIN);
+		GPIOD_PTOR |= (1<<BLUE_LED_PIN);
 		state = 3;
-	} else if (state == 3) {
-		GPIOB_PTOR |= (1<<GREEN_LED_PIN);
+	} else if (state == 1) {
 		GPIOD_PTOR |= (1<<BLUE_LED_PIN);
-		GPIOB_PTOR |= (1<<RED_LED_PIN);
+	  GPIOB_PTOR |= (1<<RED_LED_PIN);
 		state = 0;
-	}
+	} else if (state == 2) {
+    GPIOB_PTOR |= (1<<RED_LED_PIN);
+    state = 1;
+  } else if (state == 3) {
+    GPIOB_PTOR |= (1<<GREEN_LED_PIN);
+    GPIOB_PTOR |= (1<<RED_LED_PIN);
+    state = 2;
+  } 
 	
 	PORTA_ISFR |= (1<<LED_PIN);	
 }
@@ -107,4 +133,27 @@ void RGBLed_Init(void){
 	GPIOD_PSOR |= (1<<BLUE_LED_PIN);
 	
   state = 0;
+	reverse = 0;
 }
+
+void RGBLed_Deinit(void) {
+	
+    // --- RED LED ---
+    
+    // Punerea pinului in modul INPUT
+    GPIOB_PDDR &= ~(1 << RED_LED_PIN);
+
+    // --- GREEN LED ---
+    
+    // Punerea pinului in modul INPUT
+    GPIOB_PDDR &= ~(1 << GREEN_LED_PIN);
+
+    // --- BLUE LED ---
+    
+    // Punerea pinului in modul INPUT
+    GPIOD_PDDR &= ~(1 << BLUE_LED_PIN);
+
+    state = 0;
+	  reverse = 0;
+}
+
