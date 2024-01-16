@@ -1,13 +1,16 @@
 #include "Adc.h"
 #include "Uart.h"
 #include "Gpio.h"
-#include "stdio.h"
 
-#define ADC_CHANNEL (8) // PORT C PIN 1
+#define ADC_CHANNEL (8) // PORT B PIN 0
 
 extern uint8_t is_set_red;
 extern uint8_t is_set_yellow;
 extern uint8_t is_set_green;
+
+extern uint8_t incomingPy;
+
+uint8_t is_sending;
 
 void ADC0_Init() {
 	
@@ -24,8 +27,8 @@ void ADC0_Init() {
 	// Selectarea ratei de divizare folosit de periferic pentru generarea ceasului intern --> ADIV
 	// Set ADC clock frequency fADCK less than or equal to 4 MHz (PG. 494)
 	ADC0->CFG1 |= ADC_CFG1_MODE(0) |
-							 ADC_CFG1_ADICLK(0) |
-							 ADC_CFG1_ADIV(2);
+							 ADC_CFG1_ADICLK(1) |
+							 ADC_CFG1_ADIV(3);
 	
 	// DIFF = 0 --> Conversii single-ended (PG. 464)
 	ADC0->SC1[0] = 0x00;
@@ -41,7 +44,10 @@ void ADC0_Init() {
 	ADC0->SC1[0] |= ADC_SC1_AIEN_MASK;
 	
 	NVIC_ClearPendingIRQ(ADC0_IRQn);
+	NVIC_SetPriority(ADC0_IRQn, 5);
 	NVIC_EnableIRQ(ADC0_IRQn);	
+	
+	is_sending = 0;
 }
 
 int ADC0_Calibrate() {
@@ -114,6 +120,7 @@ int ADC0_Calibrate() {
 	return (0);
 }
 
+
 uint16_t ADC0_Read(){
 	
 	// A conversion is initiated following a write to SC1A, with SC1n[ADCH] not all 1's (PG. 485)
@@ -132,7 +139,7 @@ uint16_t ADC0_Read(){
 	while(!(ADC0->SC1[0] & ADC_SC1_COCO_MASK));
 	
 	return (uint16_t) ADC0->R[0];
-	
+
 }
 
 void Output_Digital(uint16_t analog_input)
@@ -163,7 +170,22 @@ void Output_Digital(uint16_t analog_input)
 }
 
 void ADC0_IRQHandler(){
-	uint16_t analog_input = (uint16_t) ADC0->R[0];
+	uint16_t analog_input = (uint16_t) ADC0->R[0];	
+
+	if(is_sending && !incomingPy)
+	{		
+		uint8_t nr1=analog_input /100; 
+		uint8_t nr2=analog_input %100 /10; 
+		uint8_t nr3=analog_input %10;
+			
+		UART_print("Sensor: ");
+		
+		UART_printChar(nr1+48);
+		UART_printChar(nr2+48);
+		UART_printChar(nr3+48);
+		UART_printChar(0x0D);
+		UART_printChar(0x0A);
+	}
 	
 	Output_Digital(analog_input);
 }

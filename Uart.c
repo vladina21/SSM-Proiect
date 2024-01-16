@@ -31,7 +31,6 @@ void UART_printChar(char ch)
 void UART0_IRQHandler(void) {
 
 		char c = UART_read();
-	  UART_printChar(c);
 	
 		if (UART0->S2 & UART0_S2_MSBF_MASK)
 		{
@@ -84,6 +83,9 @@ void UART_Init(uint32_t baud_rate)
 	//Setare numarul de biti de date la 8 si fara bit de paritate
 	UART0->C1 = 0;
 	
+  //Setare data frame - msb first
+	UART0->S2 |= UART0_S2_MSBF_MASK;
+	
 	//Dezactivare intreruperi la transmisie
 	UART0->C2 |= UART0_C2_TIE(0);
 	UART0->C2 |= UART0_C2_TCIE(0);
@@ -93,10 +95,10 @@ void UART_Init(uint32_t baud_rate)
 	
 	UART0->C2 |= ((UART_C2_RE_MASK) | (UART_C2_TE_MASK));
 	
+	NVIC_ClearPendingIRQ(UART0_IRQn);
+	NVIC_SetPriority(UART0_IRQn, 1);
 	NVIC_EnableIRQ(UART0_IRQn);
 	
-	//Setare data frame - msb first
-	UART0->S2 |= UART0_S2_MSBF_MASK;
 }
 
 void UART_print(char* string)
